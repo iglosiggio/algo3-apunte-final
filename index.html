@@ -57,7 +57,7 @@
                     console.error('El script del contexto actual no tiene un container asociado')
                     return
                 }
-                let canvas = canvasContainer.tagName === 'CANVAS'
+                let canvas = canvasContainer instanceof HTMLCanvasElement
                     ? $(canvasContainer)
                     : $('canvas', canvasContainer)
                 if (canvas.length === 0) {
@@ -103,6 +103,9 @@
             }
             $(() => $('section script').each((_, node) => {
                 const parent = node.parentNode
+                // Ignore scripts inside canvases
+                if (parent instanceof HTMLCanvasElement)
+                    return
                 const pre = document.createElement('pre')
                 const code = document.createElement('code')
                 code.classList.add('language-javascript')
@@ -118,11 +121,10 @@
                 const div = document.createElement('div')
                 code.classList.add('language-javascript')
                 code.textContent = cleanup_code(node.textContent)
-                pre.appendChild(code)
                 parent.replaceChild(div, canvas)
-
                 div.appendChild(canvas)
                 div.appendChild(pre)
+                pre.appendChild(code)
             }))
         </script>
         <script>
@@ -281,9 +283,85 @@
                     </script>
                 </canvas>
             </div>
+            <h2>Árboles Generadores Mínimos</h2>
+            <h3>Algoritmo de Prim</h3>
+            <script>
+                function msp_prim(g) {
+                    const root = g.keys().next().value
+                    const result = new Map()
+                    for (const node of g.keys())
+                        result.set(node, { prev: null, weight: Infinity, visited: false })
+                    result.get(root).weight = 0
+
+                    const queue = new PriorityQueue((a, b) => a.weight < b.weight)
+                    queue.add({ node: root, weight: 0 })
+                    while (!queue.isEmpty()) {
+                        const { node } = queue.pop()
+                        if (result.get(node).visited)
+                            continue
+                        result.get(node).visited = true
+                        for (const { neighbour, weight } of g.get(node)) {
+                            const data = result.get(neighbour)
+                            if (!data.visited && weight < data.weight) {
+                                data.prev = node
+                                data.weight = weight
+                                queue.add({ node: neighbour, weight })
+                            }
+                        }
+                    }
+                    return [...result.entries()].map(([dest, { prev, weight }]) => ({ dest, prev, weight }))
+                }
+            </script>
+            <p>Corrida en un grafo de ejemplo:</p>
+            <canvas width="300" height="350">
+                <script>
+                    function highlight_msp(graph) {
+                        const tree = graph_from_adyacency_map(graph)
+                        for (const { dest, prev } of msp_prim(graph)) {
+                            // Skip root
+                            if (prev === null)
+                                continue
+                            const edge = tree.edges.find(e => e.source.id === prev
+                                                           && e.target.id === dest)
+                            if (edge !== undefined)
+                                edge.data.color = 'red'
+                        }
+                        return tree
+                    }
+                    render({ graph: highlight_msp(wikipedia_graph) })
+                </script>
+            </canvas>
+            <p>¿Dikjstra genera un MSP?</p>
+            <p>No, <a href="https://stackoverflow.com/a/20482220/2872649">contraejemplo de stackoverflow</a></p>
+            <script>
+                const contraejemplo = new Map()
+                    .set('a', [{ neighbour: 'b', weight: 5 },
+                               { neighbour: 'c', weight: 5 },
+                               { neighbour: 'd', weight: 5 }])
+                    .set('b', [{ neighbour: 'a', weight: 5 },
+                               { neighbour: 'd', weight: 1 }])
+                    .set('c', [{ neighbour: 'a', weight: 5 },
+                               { neighbour: 'd', weight: 1 }])
+                    .set('d', [{ neighbour: 'a', weight: 5 },
+                               { neighbour: 'b', weight: 1 },
+                               { neighbour: 'c', weight: 1 }])
+            </script>
+            <div class="columns">
+            <canvas width="300" height="350">
+                <script>
+                    render({ graph: highlight_msp(contraejemplo) })
+                </script>
+            </canvas>
+            <canvas width="300" height="350">
+                <script>
+                    render({ graph: highlighted_dijkstra_tree(contraejemplo, 'a') })
+                </script>
+            </canvas>
+            </div>
+            <h3>Algoritmo de Kruskal</h3>
             <h2>Componentes fuertemente conexas</h2>
             <p>La transpuesta de un grafo tiene la misma cantidad de c.f.c.</p>
-            <h3>Demo</h3>
+            <h3>Demo <i>(faltan cosas)</i></h3>
             <ul>
                 <li>Tomemos <i>v<sub>1</sub>, v<sub>2</sub>, ..., v<sub>n</sub></i> los vértices de una c.f.c. cualquiera.</li>
                 <li>Como es una c.f.c. sabemos que para cualquier par de ellos hay un camino que los une.</li>

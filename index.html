@@ -315,9 +315,9 @@
             <p>Corrida en un grafo de ejemplo:</p>
             <canvas width="300" height="350">
                 <script>
-                    function highlight_msp(graph) {
+                    function highlight_msp(graph, algo=msp_prim) {
                         const tree = graph_from_adyacency_map(graph)
-                        for (const { dest, prev } of msp_prim(graph)) {
+                        for (const { dest, prev } of algo(graph)) {
                             // Skip root
                             if (prev === null)
                                 continue
@@ -359,6 +359,56 @@
             </canvas>
             </div>
             <h3>Algoritmo de Kruskal</h3>
+            <script>
+                function msp_kruskal(g) {
+                    // | A = Ø
+                    const ejes = []
+                    const ejes_msp = []
+
+                    const disjoint_set = new Map()
+                    // for u in G.V:
+                    for (const node of g.keys())
+                        // MAKE-SET( u )
+                        disjoint_set.set(node, null)
+                    function find(node) {
+                        const parent = disjoint_set.get(node)
+                        return parent == null ? node : find(parent)
+                    }
+                    function union(nodeA, nodeB) {
+                        const particionA = find(nodeA)
+                        const particionB = find(nodeB)
+                        disjoint_set.set(particionA, particionB)
+                    }
+
+                    /* Metemos todos los ejes sin duplicados */ {
+                        const edge_map = new Map()
+                        for (const [node, neighbours] of g.entries())
+                            for (const { neighbour, weight } of neighbours)
+                                edge_map.set(`${node}-${neighbour}`, { prev: node, dest: neighbour, weight })
+                        ejes.push(...edge_map.values())
+                    }
+                    // ORDENAR E de menor a mayor por w(e)
+                    ejes.sort((a, b) => a.weight - b.weight)
+
+                    // for e in G.E: # en orden de w
+                    for (const eje of ejes) {
+                        // if FIND-SET(u) ≠ FIND-SET(v): # para e=(u,v)
+                        if (find(eje.prev) != find(eje.dest)) {
+                            // A = A ∪ {e}
+                            ejes_msp.push(eje)
+                            // UNION(u,v)
+                            union(eje.prev, eje.dest)
+                        }
+                    }
+
+                    return ejes_msp
+                }
+            </script>
+            <canvas width="300" height="350">
+                <script>
+                    render({ graph: highlight_msp(contraejemplo, msp_kruskal) })
+                </script>
+            </canvas>
             <h2>Componentes fuertemente conexas</h2>
             <p>La transpuesta de un grafo tiene la misma cantidad de c.f.c.</p>
             <h3>Demo <i>(faltan cosas)</i></h3>

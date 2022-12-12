@@ -469,5 +469,126 @@
                 </script>
             </canvas>
         </section>
+        <section id="p-vs-np">
+            <h1>NP-Completitud, Máquinas de Turing Determinísticas y No-Determinísticas</h1>
+            <h2>Máquinas de Turing</h2>
+
+            <p>Las Máquinas de Turing (MT) son un modelo de cómputo teórico
+            creado por Alan Turing. Una MT consiste en un conjunto finito de
+            estados (S), un alfabeto (A) y una función (f:
+            (S&times;A)&rarr;(S&times;A&times;D)) que representa el proceso de
+            transición de estados. Distinguiremos a dos de los estados de S
+            (s<sub>inicial</sub> y s<sub>final</sub>) para identificar el
+            comienzo del cómputo y detectar la finalización del mismo. Esta no
+            es la única manera de hacerlo.</p>
+
+            <p>La ejecución de la máquina sucede sobre una cinta infinita
+            dividida en celdas, cada celda posee un símbolo de A escrito
+            inicialmente. En cada paso la máquina utiliza el estado actual en
+            conjunto con el símbolo bajo su posición actual para decidir qué
+            hacer. Sean <i>s</i> su estado actual y <i>a</i> el símbolo bajo la
+            posición actual entonces utilizando <i>f(s, a) = (s', a', d)</i> se
+            actualizará a la máquina: <i>s'</i> es el nuevo estado de la
+            máquina, <i>a'</i> es el nuevo símbolo bajo la posición actual y
+            <i>d</i> indica la próxima posición (moverse a la izquierda o a la
+            derecha).</p>
+
+            <script>
+                /**
+                 * Simula una Máquina de Turing
+                 *
+                 * @template S Conjunto de estados de la MT
+                 * @template A Alfabeto de la cinta de la MT
+                 * @param {Record<number, A>} cinta
+                 *        Cinta sobre la que trabajar
+                 * @param {(s: S, a: A) => [S, A, -1 | 1]} f
+                 *        Función de transición de estados
+                 * @param {S} s_inicial
+                 *        Estado inicial
+                 * @param {S} s_final
+                 *        Estado final
+                 */
+                function run_tm(cinta, f, s_inicial, s_final) {
+                    let s = s_inicial
+                    let posicion = 0
+                    while (s !== s_final) {
+                        let a = cinta[posicion]
+                        let [s_prima, a_prima, d] = f(s, a)
+                        s = s_prima
+                        cinta[posicion] = a_prima
+                        posicion += d
+                    }
+                }
+            </script>
+
+            <h3>Máquinas de Turing No-Determinísticas</h3>
+
+            <p>Las MT No-Determinísticas relajan un poco la función de
+            trancisión de estados <i>f</i>, permitiendo que el resultado sea un
+            conjunto de opciones en lugar de una sola. Este cambio es
+            perfectamente simulable desde una MTD pero tiene características
+            distintas a la hora de analizar la cantidad de pasos requeridos para
+            ejecutar ciertos algoritmos.</p>
+
+            <p>El tiempo de ejecución de un cómputo en una MTND se entiende como
+            la primera rama en llegar al estado final. Podemos entender esto
+            como una "búsqueda en anchura" por sobre las posibles decisiones en
+            cada paso. Esta forma de medir complejidad algorítmica nos ofrece un
+            algorítmo genérico para cualquier programa que tenga un certificado
+            que se pueda validar en tiempo polinómico:</p>
+
+            <ol>
+                <li>Generar cada posible certificado en paralelo <i>O(n)</i></li>
+                <li>Validar cada certificado en paralelo <i>O(n<sup>k</sup>)</i></li>
+            </ol>
+
+            <p>Esta estrategia nos ofrece algoritmos polinómicos para una enorme
+            cantidad de problemas. Lamentablemente las unidades de cómputo
+            no-teóricas tienen una cantidad limitada de tareas que pueden
+            realizar en paralelo.</p>
+
+            <h2>NP-Completitud</h2>
+
+            <p>Llamamos NP (Polinómico en MTND) al conjunto de problemas cuyo
+            certificado se puede validar en tiempo polinómico por una MT. Este
+            conjunto incluye muchos problemas clásicos como clique máxima en un
+            grafo, mochila 0-1 y SAT. Dentro de este conjunto distinguiremos a
+            los problemas NP-Completos, aquellos que pueden ser utilizados para
+            resolver todo otro problema del conjunto NP.</p>
+
+            <p>¿A qué nos referimos con <i>"pueden ser utilizados"</i>? Nos
+            referimos a que hay un algoritmo con complejidad polinómica que
+            transforma instancias de un problema en instancias del otro.
+            Formalmente usaremos <i>A &lt;<sub>p</sub> B</i> para decir "A
+            puede ser reducido a B con costo polinómico". Esto significa que
+            <i>&exist;f. &forall;I&in;Dom(A). A(I) = B(f(I))</i>. Esta
+            definición tiene sentido para <i>problemas de decisión</i>, dado que
+            allí nos importa solamente que las funciones coincidan en un
+            conjunto imagen sencillo (<i>{true, false}</i>).</p>
+
+            <p>Vale la pena notar que &lt;<sub>p</sub> es transitiva, dado que
+            si A &lt;<sub>p</sub> B y B &lt;<sub>p</sub> C entonces podemos
+            componer las funciones de transformación de instancias para
+            conseguir una demostración de A &lt;<sub>p</sub> C. Para esto último
+            es relevante notar que como cada transformación es polinómica
+            entonces la complejidad final será
+            <i>O(n<sup>k<sub>1</sub>k<sub>2</sub></sup>)</i></p>
+
+            <h2>Los distintos sabores de los problemas de optimización</h2>
+
+            <p>Un problema de optimización es aquel en el cuál nos importa
+            minimizar o maximizar una función objetivo <i>f</i> (minimizar
+            <i>f(x)</i> es lo mismo que maximizar <i>-f(x)</i>). Para los
+            problemas de esta índole hay cuatro versiones distintas que nos
+            pueden insteresar:</p>
+
+            <ul>
+                <li><strong>Optimimzación:</strong> Mostrar una parametrización válida que maximiza <i>f</i></li>
+                <li><strong>Evaluación:</strong> Mostrar el máximo <i>k</i> resultado de <i>f</i></li>
+                <li><strong>Localización:</strong> Mostrar una parametrización válida <i>p</i> para la cuál <i>k &lt; f(p)</i></li>
+                <li><strong>Decisión:</strong> ¿Existe una parametrización <i>p</i> para la cuál <i>k &lt; f(p)</i>?</li>
+            </ul>
+
+        </section>
     </body>
-</html>
+ </html>
